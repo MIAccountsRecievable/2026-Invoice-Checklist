@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mel's Invoice Checklist</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#042552;--teal:#22AABB;--green:#3DBF77;--yellow:#F6B93B;--red:#E05C5C;--gray:#848B96;--border:#E4EAF4;--bg:#F3F6FB;--white:#FFFFFF}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--navy);min-height:100vh}
+.topbar{background:var(--navy);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 2px 12px rgba(4,37,82,.2)}
+.topbar-title{color:#fff;font-weight:700;font-size:1rem}
+.topbar-sub{color:rgba(255,255,255,.5);font-size:.75rem;margin-top:1px}
+.progress-wrap{display:flex;align-items:center;gap:12px}
+.progress-text{color:#fff;font-size:.8rem;font-weight:600;white-space:nowrap}
+.progress-bar{width:140px;height:6px;background:rgba(255,255,255,.2);border-radius:99px;overflow:hidden}
+.progress-fill{height:100%;background:var(--green);border-radius:99px;transition:width .4s}
+.month-strip{display:flex;gap:4px;overflow-x:auto;padding:12px 20px;background:var(--white);border-bottom:1px solid var(--border);scrollbar-width:none}
+.month-strip::-webkit-scrollbar{display:none}
+.m-btn{flex-shrink:0;border:1.5px solid var(--border);background:var(--white);color:var(--gray);border-radius:20px;padding:5px 14px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s}
+.m-btn:hover{border-color:var(--teal);color:var(--teal)}
+.m-btn.active{background:var(--navy);border-color:var(--navy);color:#fff}
+.content{max-width:720px;margin:0 auto;padding:24px 16px 100px}
+.loading{text-align:center;padding:60px 20px;color:var(--gray);font-size:.9rem}
+.loading-spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--teal);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error-box{background:#fff7f7;border:1.5px solid #fca5a5;border-radius:12px;padding:20px;text-align:center;color:var(--red);font-size:.875rem;margin-top:20px}
+.day-group{margin-top:28px;margin-bottom:8px}
+.day-group:first-of-type{margin-top:0}
+.day-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--gray);display:flex;align-items:center;gap:8px}
+.day-label::after{content:'';flex:1;height:1px;background:var(--border)}
+.inv-card{background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:10px;transition:border-color .2s;position:relative;overflow:hidden}
+.inv-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:14px 0 0 14px;background:var(--border);transition:background .2s}
+.inv-card.sent::before{background:var(--teal)}
+.inv-card.paid::before{background:var(--green)}
+.inv-card.flag-check{border-color:#fde68a;background:#fffcf0}
+.inv-card.flag-check::before{background:var(--yellow)}
+.inv-card.flag-cond{border-color:#fca5a5;background:#fff7f7}
+.inv-card.flag-cond::before{background:var(--red)}
+.inv-card.paid{opacity:.75}
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.card-left{flex:1;min-width:0}
+.client{font-weight:700;font-size:.93rem;color:var(--navy)}
+.desc{font-size:.8rem;color:var(--gray);margin-top:2px;line-height:1.4}
+.amount{font-weight:700;font-size:1.05rem;color:var(--navy);white-space:nowrap;flex-shrink:0}
+.card-mid{display:flex;align-items:center;gap:6px;margin-top:10px;flex-wrap:wrap}
+.meta-pill{font-size:.72rem;font-weight:500;color:var(--gray);background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:2px 8px;white-space:nowrap}
+.flag-pill{font-size:.72rem;font-weight:700;border-radius:8px;padding:3px 10px;white-space:nowrap}
+.flag-pill.check{background:#fef3c7;color:#92400e}
+.flag-pill.cond{background:#fee2e2;color:#991b1b}
+.notes-row{margin-top:10px;background:var(--bg);border-radius:8px;padding:10px 12px;font-size:.78rem;color:var(--navy);line-height:1.5;border-left:3px solid var(--yellow)}
+.notes-row.cond-note{border-left-color:var(--red)}
+.billing-toggle{background:none;border:none;cursor:pointer;font-size:.75rem;color:var(--teal);font-family:'DM Sans',sans-serif;font-weight:600;padding:0;margin-top:8px;display:block;text-decoration:underline;text-underline-offset:2px}
+.billing-row{margin-top:8px;font-size:.75rem;color:var(--gray);line-height:1.6}
+.card-actions{display:flex;gap:8px;margin-top:14px}
+.action-btn{flex:1;border:2px solid var(--border);border-radius:10px;padding:11px 0;font-size:.84rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;background:var(--white);color:var(--gray);transition:all .18s;display:flex;align-items:center;justify-content:center;gap:6px}
+.action-btn:hover{transform:translateY(-1px);box-shadow:0 3px 10px rgba(0,0,0,.08)}
+.action-btn.sent-btn{border-color:var(--teal);color:var(--teal)}
+.action-btn.sent-btn:hover{background:var(--teal);color:#fff}
+.action-btn.sent-btn.active{background:var(--teal);color:#fff;border-color:var(--teal)}
+.action-btn.paid-btn{border-color:var(--green);color:var(--green)}
+.action-btn.paid-btn:hover{background:var(--green);color:#fff}
+.action-btn.paid-btn.active{background:var(--green);color:#fff;border-color:var(--green)}
+.action-btn.paid-btn:disabled{opacity:.35;cursor:not-allowed;transform:none;box-shadow:none}
+.all-done{display:none;text-align:center;padding:40px 20px;background:var(--white);border-radius:16px;border:2px solid var(--green);margin-top:20px}
+.all-done.show{display:block}
+.all-done-icon{font-size:2.5rem;margin-bottom:10px}
+.all-done-title{font-size:1.2rem;font-weight:700;color:var(--navy)}
+.all-done-sub{font-size:.85rem;color:var(--gray);margin-top:6px}
+.summary-strip{position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:1px solid var(--border);padding:12px 20px;display:flex;justify-content:center;gap:32px;box-shadow:0 -4px 20px rgba(4,37,82,.08);z-index:40}
+.sum-item{text-align:center}
+.sum-val{font-size:1.1rem;font-weight:700;color:var(--navy)}
+.sum-lab{font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--gray);margin-top:1px}
+.refresh-btn{background:none;border:1px solid rgba(255,255,255,.3);color:rgba(255,255,255,.7);border-radius:8px;padding:4px 10px;font-size:.72rem;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .15s}
+.refresh-btn:hover{background:rgba(255,255,255,.1);color:#fff}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <div class="topbar-title">Mel's Invoice Checklist</div>
+    <div class="topbar-sub" id="topSub">Malloy Industries &middot; Loading...</div>
+  </div>
+  <div class="progress-wrap">
+    <button class="refresh-btn" onclick="loadInvoices()">&#8635; Refresh</button>
+    <div class="progress-text" id="progressText">0 / 0 sent</div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+  </div>
+</div>
+
+<div class="month-strip" id="monthStrip"></div>
+
+<div class="content">
+  <div id="invoiceList">
+    <div class="loading">
+      <div class="loading-spinner"></div>
+      Loading invoices from Airtable...
+    </div>
+  </div>
+  <div class="all-done" id="allDone">
+    <div class="all-done-icon">&#127881;</div>
+    <div class="all-done-title">All invoices sent for <span id="doneMonth"></span>!</div>
+    <div class="all-done-sub">Check back as payments come in to mark them paid.</div>
+  </div>
+</div>
+
+<div class="summary-strip">
+  <div class="sum-item"><div class="sum-val" id="sumBilled">$0</div><div class="sum-lab">Billed</div></div>
+  <div class="sum-item"><div class="sum-val" id="sumCollected">$0</div><div class="sum-lab">Collected</div></div>
+  <div class="sum-item"><div class="sum-val" id="sumOutstanding">$0</div><div class="sum-lab">Outstanding</div></div>
+</div>
+
+<script>
+var AT_TOKEN = 'pat8mIHeQnI3z76QB.95cff8fb8cb19b9bce8b91e3b23bf6a671ca070678534bc0d0aca62d7a367a6e';
+var AT_BASE  = 'appBZEsRurslrAqBn';
+var AT_TABLE = 'tbltil6DwJlrFxnu9';
+
+var MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+var SHORT  = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+var activeMonth = new Date().getMonth();
+var invoices = [];
+var state = {};
+
+function loadState() {
+  try { var s = localStorage.getItem('mel_ar_2026'); if (s) state = JSON.parse(s); } catch(e) {}
+}
+function saveState() {
+  try { localStorage.setItem('mel_ar_2026', JSON.stringify(state)); } catch(e) {}
+}
+function getS(mi, id) { return (state[mi] && state[mi][id]) || {sent:false, paid:false}; }
+function setS(mi, id, key, val) {
+  if (!state[mi]) state[mi] = {};
+  if (!state[mi][id]) state[mi][id] = {sent:false, paid:false};
+  state[mi][id][key] = val;
+  saveState();
+}
+
+function buildMonths() {
+  var strip = document.getElementById('monthStrip');
+  strip.innerHTML = '';
+  SHORT.forEach(function(s, i) {
+    var b = document.createElement('button');
+    b.className = 'm-btn' + (i === activeMonth ? ' active' : '');
+    b.textContent = s;
+    b.onclick = function() { activeMonth = i; buildMonths(); renderList(); };
+    strip.appendChild(b);
+  });
+  var active = strip.querySelector('.active');
+  if (active) active.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'});
+}
+
+function loadInvoices() {
+  document.getElementById('invoiceList').innerHTML = '<div class="loading"><div class="loading-spinner"></div>Loading invoices from Airtable...</div>';
+  document.getElementById('topSub').textContent = 'Malloy Industries · Loading...';
+
+  var url = 'https://api.airtable.com/v0/' + AT_BASE + '/' + AT_TABLE
+    + '?filterByFormula=' + encodeURIComponent('{Active}=1')
+    + '&sort[0][field]=Send+on+Day&sort[0][direction]=asc';
+
+  fetch(url, { headers: { 'Authorization': 'Bearer ' + AT_TOKEN } })
+    .then(function(r) {
+      if (!r.ok) throw new Error('API error ' + r.status);
+      return r.json();
+    })
+    .then(function(data) {
+      invoices = (data.records || []).map(function(rec) {
+        var f = rec.fields;
+        var flagRaw = (f['Flag'] && f['Flag'].name) ? f['Flag'].name : (f['Flag'] || 'Normal');
+        var flag = '';
+        if (flagRaw === 'Check with Mike') flag = 'check';
+        if (flagRaw === 'Conditional - Do Not Send') flag = 'cond';
+        return {
+          id:     rec.id,
+          client: f['Client'] || '',
+          desc:   f['Invoice Description'] || '',
+          inv:    f['Send on Day'] || 20,
+          due:    f['Due on Day'] || 0,
+          amount: f['Amount'] || 0,
+          bill:   f['Bill To'] || '',
+          cc:     f['CC'] || '',
+          note:   f['Notes'] || '',
+          flag:   flag
+        };
+      });
+      renderList();
+    })
+    .catch(function(err) {
+      document.getElementById('invoiceList').innerHTML =
+        '<div class="error-box">Could not load invoices: ' + err.message + '<br><br><button onclick="loadInvoices()" style="margin-top:8px;padding:8px 16px;background:var(--navy);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:DM Sans,sans-serif;font-weight:600;">Try again</button></div>';
+    });
+}
+
+function groupByDay() {
+  var groups = {};
+  invoices.forEach(function(inv) {
+    var k = inv.inv || 20;
+    if (!groups[k]) groups[k] = [];
+    groups[k].push(inv);
+  });
+  return Object.entries(groups).sort(function(a,b) { return +a[0] - +b[0]; });
+}
+
+function fmt(n) { return '$' + n.toLocaleString('en-US', {minimumFractionDigits: n%1 ? 2:0, maximumFractionDigits:2}); }
+function ordinal(n) { var s=['th','st','nd','rd']; var v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); }
+
+function renderList() {
+  var mi = activeMonth;
+  document.getElementById('topSub').textContent = 'Malloy Industries · ' + MONTHS[mi] + ' 2026';
+  var container = document.getElementById('invoiceList');
+  container.innerHTML = '';
+
+  if (invoices.length === 0) {
+    container.innerHTML = '<div class="error-box">No active invoices found. Check the Airtable base.</div>';
+    return;
+  }
+
+  var groups = groupByDay();
+  groups.forEach(function(entry) {
+    var day = entry[0]; var invs = entry[1];
+    var dayLabel = document.createElement('div');
+    dayLabel.className = 'day-group';
+    dayLabel.innerHTML = '<div class="day-label">Send on the ' + ordinal(+day) + '</div>';
+    container.appendChild(dayLabel);
+
+    invs.forEach(function(inv) {
+      var s = getS(mi, inv.id);
+      var card = document.createElement('div');
+      card.id = 'card-' + inv.id;
+      card.className = 'inv-card'
+        + (s.paid ? ' paid' : s.sent ? ' sent' : '')
+        + (inv.flag === 'check' ? ' flag-check' : '')
+        + (inv.flag === 'cond'  ? ' flag-cond'  : '');
+
+      var flagPill = inv.flag === 'check'
+        ? '<span class="flag-pill check">&#9873; Check with Mike first</span>'
+        : inv.flag === 'cond'
+        ? '<span class="flag-pill cond">&#9940; Do not send &mdash; check notes</span>'
+        : '';
+
+      var noteHtml = inv.note
+        ? '<div class="notes-row ' + (inv.flag==='cond'?'cond-note':'') + '">' + inv.note + '</div>' : '';
+
+      var dueText = inv.due ? 'Due ' + ordinal(inv.due) : 'Due TBD';
+      var ccHtml = inv.cc
+        ? '<button class="billing-toggle" onclick="toggleCC(this)">+ Show CC addresses</button>'
+          + '<div class="billing-row" style="display:none"><strong>CC:</strong> ' + inv.cc + '</div>'
+        : '';
+
+      var sentActive = s.sent || s.paid;
+      card.innerHTML =
+        '<div class="card-top">'
+          + '<div class="card-left">'
+            + '<div class="client">' + inv.client + '</div>'
+            + '<div class="desc">' + inv.desc + '</div>'
+          + '</div>'
+          + '<div class="amount">' + fmt(inv.amount) + '</div>'
+        + '</div>'
+        + '<div class="card-mid">'
+          + '<span class="meta-pill">&#128196; ' + dueText + '</span>'
+          + '<span class="meta-pill">&#128231; ' + inv.bill + '</span>'
+          + flagPill
+        + '</div>'
+        + noteHtml + ccHtml
+        + '<div class="card-actions">'
+          + '<button class="action-btn sent-btn' + (sentActive?' active':'') + '" onclick="toggleSent('' + inv.id + '')">'
+            + (sentActive ? '&#10003; Sent' : '&#8594; Mark Sent')
+          + '</button>'
+          + '<button class="action-btn paid-btn' + (s.paid?' active':'') + '" '
+            + (sentActive ? '' : 'disabled') + ' onclick="togglePaid('' + inv.id + '')">'
+            + (s.paid ? '&#10003; Paid' : '&#128176; Mark Paid')
+          + '</button>'
+        + '</div>';
+
+      container.appendChild(card);
+    });
+  });
+
+  updateSummary();
+}
+
+function toggleCC(btn) {
+  var row = btn.nextElementSibling;
+  var showing = row.style.display !== 'none';
+  row.style.display = showing ? 'none' : 'block';
+  btn.textContent = showing ? '+ Show CC addresses' : '- Hide CC addresses';
+}
+
+function toggleSent(id) {
+  var mi = activeMonth;
+  var s = getS(mi, id);
+  if (s.paid) return;
+  setS(mi, id, 'sent', !s.sent);
+  renderList();
+}
+
+function togglePaid(id) {
+  var mi = activeMonth;
+  var s = getS(mi, id);
+  if (!s.sent && !s.paid) return;
+  var nowPaid = !s.paid;
+  setS(mi, id, 'paid', nowPaid);
+  if (nowPaid) setS(mi, id, 'sent', true);
+  renderList();
+}
+
+function updateSummary() {
+  var mi = activeMonth;
+  var billed = 0, collected = 0, sentCount = 0;
+  invoices.forEach(function(inv) {
+    var s = getS(mi, inv.id);
+    if (s.sent || s.paid) { billed += inv.amount; sentCount++; }
+    if (s.paid) collected += inv.amount;
+  });
+  document.getElementById('sumBilled').textContent = fmt(billed);
+  document.getElementById('sumCollected').textContent = fmt(collected);
+  document.getElementById('sumOutstanding').textContent = fmt(billed - collected);
+  var pct = invoices.length ? Math.round(sentCount / invoices.length * 100) : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = sentCount + ' / ' + invoices.length + ' sent';
+  var allDone = document.getElementById('allDone');
+  if (invoices.length && sentCount === invoices.length) {
+    allDone.classList.add('show');
+    document.getElementById('doneMonth').textContent = MONTHS[mi];
+  } else {
+    allDone.classList.remove('show');
+  }
+}
+
+loadState();
+buildMonths();
+loadInvoices();
+</script>
+</body>
+</html>

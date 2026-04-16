@@ -1,11 +1,29 @@
-<!-- Updated index.html Content -->
-<!-- previous content above -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Checklist</title>
+</head>
+<body>
+    <!-- Other HTML content -->
 
-<!-- Example syntax fix for line 268 and 272 -->
-<!-- Update for line 268 -->
-onclick="toggleSent('" + inv.id + "')" 
+    <script>
+        function toggleSent(id) {
+            // Functionality to toggle sent status
+        }
+        function togglePaid(id) {
+            // Functionality to toggle paid status
+        }
+    </script>
 
-<!-- Update for line 272 -->
-onclick="togglePaid('" + inv.id + "')" 
+    <table>
+        <tr>
+            <td><button onclick="toggleSent('\" + inv.id + '\")">Toggle Sent</button></td>
+            <td><button onclick="togglePaid('\" + inv.id + '\")">Toggle Paid</button></td>
+        </tr>
+    </table>
 
-<!-- previous content below -->
+    <!-- Other HTML content -->
+</body>
+</html>
